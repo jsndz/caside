@@ -8,8 +8,18 @@ type Hub struct {
     Mutex sync.Mutex
 }
 
-func (h *Hub) GetOrCreateRoom(id string) *Room{
-	return nil
+func (h *Hub) GetOrCreateRoom(roomId string) *Room{
+    h.Mutex.Lock()
+    defer h.Mutex.Unlock()
+    if room, ok := h.Rooms[roomId]; ok {
+        return room
+    }
+    room := &Room{
+        ID : roomId,
+        clients: make(map[string]*Client),
+    }
+    h.Rooms[roomId]=room
+	return room
 }
 
 

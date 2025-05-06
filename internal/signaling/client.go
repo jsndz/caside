@@ -1,6 +1,11 @@
 package signaling
 
-import "github.com/gorilla/websocket"
+import (
+	"fmt"
+	"log"
+
+	"github.com/gorilla/websocket"
+)
 
 
 type Client struct{
@@ -10,10 +15,23 @@ type Client struct{
 	Room Room
 }
 
-func (c *Client) ReadPump(h *Hub ){
-
+func (c *Client) ReadPump(h *Hub){
+	for{
+		_,msg,err := c.Conn.ReadMessage()
+		if err!=nil{
+			c.Conn.Close()
+			break
+		}
+		fmt.Printf("Message: %v",msg)
+	}
 }
 
 func (c *Client) WritePump(){
-
+	for msg := range c.Send {
+		err := c.Conn.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
 }

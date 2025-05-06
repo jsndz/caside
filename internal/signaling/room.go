@@ -18,16 +18,26 @@ type Room struct{
 	mutex sync.Mutex
 }
 
-func (r *Room) AddClient(userID string) *Room{
-	return nil
+func (r *Room) AddClient(client *Client) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.clients[client.ID]= client
 }
 
 
-func (r *Room) RemoveCLient(userID string) *Room{
-	return nil
+func (r *Room) RemoveCLient(client *Client) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	delete(r.clients,client.ID)
 }
 
 
-func (r *Room) Broadcast(userID string) *Room{
-	return nil
+func (r *Room) Broadcast(userID string,msg []byte) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	for id,client:= range r.clients{
+		if id!= userID{
+			client.Send <- msg
+		}
+	} 
 }

@@ -31,3 +31,7 @@ func wsHandler(h *signaling.Hub) http.HandlerFunc{
 		go client.WritePump()
 	}
 }
+
+
+func main(){
+}
