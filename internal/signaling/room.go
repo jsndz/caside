@@ -41,3 +41,10 @@ func (r *Room) Broadcast(userID string,msg []byte) {
 		}
 	} 
 }
+
+
+func (r *Room) IsEmpty() bool {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	return len(r.clients) == 0
+}

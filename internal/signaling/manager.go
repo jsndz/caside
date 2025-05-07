@@ -23,3 +23,13 @@ func (h *Hub) GetOrCreateRoom(roomId string) *Room{
 }
 
 
+
+func (h *Hub) DeleteRoom(roomId string) {
+    h.Mutex.Lock()
+    defer h.Mutex.Unlock()
+    delete(h.Rooms,roomId) 
+}
+
+
+
+
