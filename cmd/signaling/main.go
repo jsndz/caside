@@ -1,4 +1,4 @@
-package signaling
+package main
 
 import (
 	"log"
@@ -34,4 +34,13 @@ func wsHandler(h *signaling.Hub) http.HandlerFunc{
 
 
 func main(){
+	hub := signaling.Hub{
+		Rooms: make(map[string]*signaling.Room),
+	}
+	http.HandleFunc("/ws",wsHandler(&hub))
+	log.Println("Server started on :8080")
+    err := http.ListenAndServe(":8080", nil)
+    if err != nil {
+        log.Fatal("ListenAndServe: ", err)
+    }
 }
