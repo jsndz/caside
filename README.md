@@ -138,77 +138,6 @@
 
 - **Community Involvement**: If you want to open-source Caside, set up a GitHub repository and encourage other developers to contribute, report issues, or ask for help.
 
----
-
-**risks and challenges**.
-
----
-
-## 🚫 What Could Go Wrong (Realistically)
-
-### 1. **High Technical Complexity**
-
-**Risk**: WebRTC, signaling, media muxing, and distributed systems are hard to get right—especially alone.
-
-**Impact**: It could take months to build a robust MVP. You may burn out or get stuck debugging tricky real-time bugs.
-
----
-
-### 2. **Limited Differentiation**
-
-**Risk**: There are open-source projects (like [Jitsi](https://jitsi.org), [LiveKit](https://livekit.io), [Pion](https://github.com/pion), [Janus](https://janus.conf.meetecho.com/)) that already offer pluggable video solutions.
-
-**Impact**: Developers might prefer mature ecosystems unless you nail simplicity or a niche (e.g., dead-simple self-hosting, tight S3 integration, or low cost).
-
----
-
-### 3. **Frontend Integration Friction**
-
-**Risk**: Even if the backend is well-architected, integration with arbitrary frontends can be awkward.
-
-**Impact**: Developers may still need to write a lot of boilerplate, hurting the “drop-in” experience.
-
----
-
-### 4. **Cost of Running Media Services**
-
-**Risk**: Server-side recording and SFU processing can be resource-heavy.
-
-**Impact**: Anyone self-hosting Caside might still need good infra and devops knowledge, which might narrow your audience.
-
----
-
-### 5. **Lack of Adoption**
-
-**Risk**: Without marketing, clear docs, and community, even good projects can die unnoticed.
-
-**Impact**: If no one uses it or gives feedback, it may feel like wasted effort.
-
----
-
-## ✅ Why It’s Still Worth It
-
-1. **You’ll Learn a LOT** — WebRTC, Go concurrency, media pipelines, distributed systems — this is resume-gold.
-2. **It _can_ Work in Niche Use Cases** — Like internal tools, edtech platforms, side SaaS apps that can’t afford Twilio/Agora.
-3. **If Done Right, It Could Go Viral on GitHub** — Especially if it’s well-documented, deployable in one line, and free.
-4. **You’re Not Competing With Big Players Directly** — You’re just offering a minimal backend that others can fork and extend.
-
----
-
-## 🎯 What Increases the Chance of Success
-
-- Focus first on **recording + uploading** via WebRTC and skip SFU complexity.
-- Make the API dead-simple (`/start`, `/stop`, `/upload`) and frontend-agnostic.
-- Add a one-click deploy button (like “Deploy to Railway/Render/EC2”).
-- Document **integration in 5 minutes** with code snippets.
-- Add optional integrations (S3, Supabase Storage, MinIO).
-
----
-
-Great! Here's a **realistic MVP feature list** for **Caside**, focusing on the **core value**: a lightweight, pluggable backend that lets _any_ frontend app record and store video calls easily.
-
----
-
 ## 🚀 Caside MVP Feature List
 
 ### ✅ 1. **Auth (Basic JWT)**
@@ -361,3 +290,18 @@ caside/
 │
 ├── go.mod
 └── README.md
+
+### Stage 2 : Media Handling
+
+[Client A] [Signaling Server] [Client B]
+| | |
+
+1.  |----- Create Offer -------->| |
+2.  |<------ Send Offer ---------| |
+3.  |---------------------------->|----- Receive Offer --------|
+4.  | |<----- Create Answer --------|
+5.  |<------ Send Answer -------| |
+6.  |----- Exchange ICE -------->| |
+7.  |<----- Exchange ICE -------| |
+8.  | |----- Exchange ICE --------->|
+    |<--- Media Flow Starts --->|<--- Media Flow Starts ------>|
