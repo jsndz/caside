@@ -64,10 +64,18 @@ func HandleEvents( message Message, c *Client, h *Hub) {
 		room.Broadcast(c.ID,[]byte(c.ID+" joined the Room."))
 		log.Printf("Client %s joined room %s", c.ID, message.RoomID)
 	}
-	case "offer":{
-		room:=h.GetOrCreateRoom(message.RoomID)
-		room.Broadcast(c.ID,[]byte(c.ID+" Sent a Offer."))
-	}
+	case "offer":
+		log.Printf("Broadcasting offer from %s in room %s", c.ID, message.RoomID)
+		c.Room.Broadcast(c.ID, message.Payload)
+
+	case "answer":
+		log.Printf("Broadcasting answer from %s in room %s", c.ID, message.RoomID)
+		c.Room.Broadcast(c.ID, message.Payload)
+
+	case "candidate":
+		log.Printf("Broadcasting ICE candidate from %s in room %s", c.ID, message.RoomID)
+		c.Room.Broadcast(c.ID, message.Payload)
+
 	default:
 		log.Println("Unknown message type:", message.Type)
 	}
