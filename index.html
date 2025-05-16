@@ -13,11 +13,13 @@
   </head>
   <body>
     <h1>WebRTC Simple Test</h1>
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
 
     <script>
-      const signalingUrl = "ws://192.168.180.197:8080/ws";
+      const signalingUrl =
+        "wss://6e7b-2409-40f2-3145-e7c1-ecea-3dc5-84b7-a5a4.ngrok-free.app/ws";
+
       const roomId = "123X";
       const socket = new WebSocket(signalingUrl);
 
@@ -34,19 +36,22 @@
       socket.onopen = async () => {
         console.log("✅ Connected to signaling server");
 
-        // Step 1: Join the room
+        // Step 1: Join room
         const joinMessage = {
           type: "join",
           roomId: roomId,
-          payload: {
-            message: "Joined room",
-          },
+          payload: { message: "Joined room" },
         };
         socket.send(JSON.stringify(joinMessage));
         console.log("➡️ Sent join message");
 
-        // Step 2: Start media + offer
-        await startWebRTC();
+        try {
+          // Step 2: Start WebRTC
+          await startWebRTC();
+        } catch (err) {
+          console.error("❌ Failed to start WebRTC:", err);
+          alert("Could not access camera/microphone.");
+        }
       };
 
       socket.onerror = (error) => {
@@ -54,41 +59,55 @@
       };
 
       socket.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch (e) {
+          console.warn("⚠️ Non-JSON message:", event.data);
+          return;
+        }
+
         console.log("📩 Message from server:", data);
 
-        if (data.type === "answer") {
-          await peerConnection.setRemoteDescription(
-            new RTCSessionDescription(data.payload)
-          );
-          console.log("✅ Remote SDP answer set");
-        } else if (data.type === "candidate") {
-          try {
-            await peerConnection.addIceCandidate(
-              new RTCIceCandidate(data.candidate)
+        switch (data.type) {
+          case "answer":
+            await peerConnection.setRemoteDescription(
+              new RTCSessionDescription(data.payload)
             );
-            console.log("✅ Added remote ICE candidate");
-          } catch (e) {
-            console.error("Error adding ICE candidate", e);
-          }
+            console.log("✅ Remote SDP answer set");
+            break;
+          case "candidate":
+            try {
+              await peerConnection.addIceCandidate(
+                new RTCIceCandidate(data.candidate)
+              );
+              console.log("✅ Added remote ICE candidate");
+            } catch (e) {
+              console.error("❌ Error adding ICE candidate:", e);
+            }
+            break;
+          default:
+            console.warn("⚠️ Unknown message type:", data.type);
         }
       };
 
       async function startWebRTC() {
+        // Step 2.1: Get media
         localStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
         localVideo.srcObject = localStream;
 
+        // Step 2.2: Create peer connection
         peerConnection = new RTCPeerConnection(config);
 
-        // Step 3: Add local tracks
+        // Step 2.3: Add local tracks
         localStream.getTracks().forEach((track) => {
           peerConnection.addTrack(track, localStream);
         });
 
-        // Step 4: Handle remote track
+        // Step 2.4: Remote track
         peerConnection.ontrack = (event) => {
           if (remoteVideo.srcObject !== event.streams[0]) {
             remoteVideo.srcObject = event.streams[0];
@@ -96,8 +115,9 @@
           }
         };
 
-        // Step 5: Handle ICE candidates
+        // Step 2.5: ICE candidates
         peerConnection.onicecandidate = (event) => {
+          console.log("CANDIDATE: ", event.candidate);
           if (event.candidate) {
             socket.send(
               JSON.stringify({
@@ -109,16 +129,17 @@
           }
         };
 
-        // Step 6: Create and send SDP offer
+        // Step 2.6: Offer
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
 
-        const offerMessage = {
-          type: "offer",
-          roomId: roomId,
-          payload: offer,
-        };
-        socket.send(JSON.stringify(offerMessage));
+        socket.send(
+          JSON.stringify({
+            type: "offer",
+            roomId: roomId,
+            payload: offer,
+          })
+        );
         console.log("📤 Sent SDP offer");
       }
     </script>

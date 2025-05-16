@@ -2,7 +2,6 @@ package signaling
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -47,7 +46,7 @@ func (c *Client) ReadPump(h *Hub,m *media.Manager){
 			log.Println("Error unmarshalling message:", err)
 			continue
 		}
-		fmt.Printf("Message received: %v\n", message)
+		// fmt.Printf("Message received: %v\n", message)
 		HandleEvents(message, c, h,m)
 	}
 }
@@ -128,15 +127,21 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 		c.Room.Broadcast(c.ID, message.Payload)
 
 	case "candidate":
-		session ,err := m.JoinSession(message.RoomID)
-		if err!=nil{
-			log.Println("Failed to Join :", err)
-			return
-		}
+		
 		var candidate webrtc.ICECandidateInit
+		log.Printf("Log payload %v",message.Payload)
 		if err:= json.Unmarshal(message.Payload,&candidate);err!=nil{
 			log.Println("Failed to Unmarshal :", err)
 			return
+		}
+		session := c.Room.Session
+		if session==nil{
+			var err error
+			session ,err = m.JoinSession(message.RoomID)
+			if err!=nil{
+				log.Println("Failed to Join :", err)
+				return
+			}
 		}
 		if err:= session.AddICECandidate(candidate);err!=nil{
 			log.Println("Error adding ICE candidate:", err)			
