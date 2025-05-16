@@ -45,12 +45,10 @@ func main() {
 	hub := signaling.Hub{
 		Rooms: make(map[string]*signaling.Room),
 	}
-	media := media.Manager{
-		Sessions: make(map[string]*media.Session),
-	}
-	http.HandleFunc("/ws", wsHandler(&hub,&media))
+	media := media.NewManager()
+	http.HandleFunc("/ws", wsHandler(&hub,media))
 	log.Println("Server started on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
 		log.Fatal("ListenAndServe Error: ", err)
 	}
 }

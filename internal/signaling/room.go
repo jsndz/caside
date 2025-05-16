@@ -3,6 +3,8 @@ package signaling
 import (
 	"encoding/json"
 	"sync"
+
+	"github.com/jsndz/caside/internal/media"
 )
 
 type Message struct {
@@ -15,6 +17,8 @@ type Message struct {
 type Room struct{
 	ID string
 	clients map[string]*Client 
+	SessionID string
+    Session *media.Session
 	mutex sync.Mutex
 }
 

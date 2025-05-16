@@ -15,7 +15,7 @@ type Client struct{
 	Conn *websocket.Conn
 	ID string
 	Send chan []byte
-	Room Room
+	Room *Room
 }
 
 func (c *Client) ReadPump(h *Hub,m *media.Manager){
@@ -68,27 +68,31 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 	case "join":{
 		room:=h.GetOrCreateRoom(message.RoomID)
 		room.AddClient(c)
+		c.Room= room
 		c.Send <- []byte("You have joined the room: " + message.RoomID)
 		room.Broadcast(c.ID,[]byte(c.ID+" joined the Room."))
 		log.Printf("Client %s joined room %s", c.ID, message.RoomID)
 	}
 	case "offer":
-		session, err := m.JoinSession(message.RoomID)
-		if err != nil {
-			var createErr error
-			_, session, createErr = m.CreateSession(webrtc.Configuration{
-				ICEServers: []webrtc.ICEServer{
-					{URLs: []string{"stun:stun.l.google.com:19302"}},
-					{URLs: []string{"stun:stun1.l.google.com:19302"}},
-					{URLs: []string{"stun:stun2.l.google.com:19302"}},
-					{URLs: []string{"stun:stun3.l.google.com:19302"}},
-					{URLs: []string{"stun:stun4.l.google.com:19302"}},
-				},
-			})
-			if createErr != nil {
-				log.Println("Error creating session:", createErr)
-				return
+		if c.Room.Session==nil {
+			session, err := m.JoinSession(message.RoomID)
+			if err != nil {
+				var createErr error
+				_, session, createErr = m.CreateSession(webrtc.Configuration{
+					ICEServers: []webrtc.ICEServer{
+						{URLs: []string{"stun:stun.l.google.com:19302"}},
+						{URLs: []string{"stun:stun1.l.google.com:19302"}},
+						{URLs: []string{"stun:stun2.l.google.com:19302"}},
+						{URLs: []string{"stun:stun3.l.google.com:19302"}},
+						{URLs: []string{"stun:stun4.l.google.com:19302"}},
+					},
+				})
+				if createErr != nil {
+					log.Println("Error creating session:", createErr)
+					return
+				}
 			}
+			c.Room.Session= session
 		}
 
 		var sdp webrtc.SessionDescription
@@ -98,7 +102,7 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 			return
 		}
 
-		ans,err  := session.HandleSDP(sdp) 
+		ans,err  := c.Room.Session.HandleSDP(sdp) 
 		if err !=nil {
 			log.Println("err in getting ans")
 		}
@@ -137,7 +141,7 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 		if err:= session.AddICECandidate(candidate);err!=nil{
 			log.Println("Error adding ICE candidate:", err)			
 		}
-
+		c.Room.Broadcast(c.ID,message.Payload)
 	default:
 		log.Println("Unknown message type:", message.Type)
 	}

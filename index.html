@@ -2,50 +2,124 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>WebSocket Test</title>
+    <title>WebRTC Test</title>
+    <style>
+      video {
+        width: 45%;
+        margin: 5px;
+        background: #000;
+      }
+    </style>
   </head>
   <body>
-    <button onclick="joinRoom()">Join Room</button>
-    <button onclick="sendOffer()">Send SDP Offer</button>
+    <h1>WebRTC Simple Test</h1>
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
 
     <script>
-      const signalingUrl = "ws://localhost:8080/ws";
+      const signalingUrl = "ws://192.168.180.197:8080/ws";
+      const roomId = "123X";
       const socket = new WebSocket(signalingUrl);
 
-      socket.onopen = () => {
-        console.log("Connected to WebSocket server");
+      let localStream;
+      let peerConnection;
+
+      const config = {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       };
 
-      socket.onerror = (error) => {
-        console.error(" WebSocket Error:", error);
-      };
+      const localVideo = document.getElementById("localVideo");
+      const remoteVideo = document.getElementById("remoteVideo");
 
-      socket.onmessage = (event) => {
-        console.log(" Message from server:", event.data);
-      };
+      socket.onopen = async () => {
+        console.log("✅ Connected to signaling server");
 
-      function joinRoom() {
+        // Step 1: Join the room
         const joinMessage = {
-          Type: "join",
-          RoomID: "123X",
-          Payload: {
-            message: "Joined the room",
+          type: "join",
+          roomId: roomId,
+          payload: {
+            message: "Joined room",
           },
         };
         socket.send(JSON.stringify(joinMessage));
-        console.log(" Sent Join Room message");
-      }
+        console.log("➡️ Sent join message");
 
-      function sendOffer() {
+        // Step 2: Start media + offer
+        await startWebRTC();
+      };
+
+      socket.onerror = (error) => {
+        console.error("❌ WebSocket error:", error);
+      };
+
+      socket.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        console.log("📩 Message from server:", data);
+
+        if (data.type === "answer") {
+          await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(data.payload)
+          );
+          console.log("✅ Remote SDP answer set");
+        } else if (data.type === "candidate") {
+          try {
+            await peerConnection.addIceCandidate(
+              new RTCIceCandidate(data.candidate)
+            );
+            console.log("✅ Added remote ICE candidate");
+          } catch (e) {
+            console.error("Error adding ICE candidate", e);
+          }
+        }
+      };
+
+      async function startWebRTC() {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        localVideo.srcObject = localStream;
+
+        peerConnection = new RTCPeerConnection(config);
+
+        // Step 3: Add local tracks
+        localStream.getTracks().forEach((track) => {
+          peerConnection.addTrack(track, localStream);
+        });
+
+        // Step 4: Handle remote track
+        peerConnection.ontrack = (event) => {
+          if (remoteVideo.srcObject !== event.streams[0]) {
+            remoteVideo.srcObject = event.streams[0];
+            console.log("🎥 Remote stream set");
+          }
+        };
+
+        // Step 5: Handle ICE candidates
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.send(
+              JSON.stringify({
+                type: "candidate",
+                roomId: roomId,
+                candidate: event.candidate,
+              })
+            );
+          }
+        };
+
+        // Step 6: Create and send SDP offer
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
         const offerMessage = {
           type: "offer",
-          roomId: "123X",
-          payload: {
-            sdp: "SDP_OFFER_DATA",
-          },
+          roomId: roomId,
+          payload: offer,
         };
         socket.send(JSON.stringify(offerMessage));
-        console.log(" Sent SDP Offer message");
+        console.log("📤 Sent SDP offer");
       }
     </script>
   </body>
