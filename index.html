@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WebSocket Test</title>
+  </head>
+  <body>
+    <button onclick="joinRoom()">Join Room</button>
+    <button onclick="sendOffer()">Send SDP Offer</button>
+
+    <script>
+      const signalingUrl = "ws://localhost:8080/ws";
+      const socket = new WebSocket(signalingUrl);
+
+      socket.onopen = () => {
+        console.log("Connected to WebSocket server");
+      };
+
+      socket.onerror = (error) => {
+        console.error(" WebSocket Error:", error);
+      };
+
+      socket.onmessage = (event) => {
+        console.log(" Message from server:", event.data);
+      };
+
+      function joinRoom() {
+        const joinMessage = {
+          Type: "join",
+          RoomID: "123X",
+          Payload: {
+            message: "Joined the room",
+          },
+        };
+        socket.send(JSON.stringify(joinMessage));
+        console.log(" Sent Join Room message");
+      }
+
+      function sendOffer() {
+        const offerMessage = {
+          type: "offer",
+          roomId: "123X",
+          payload: {
+            sdp: "SDP_OFFER_DATA",
+          },
+        };
+        socket.send(JSON.stringify(offerMessage));
+        console.log(" Sent SDP Offer message");
+      }
+    </script>
+  </body>
+</html>

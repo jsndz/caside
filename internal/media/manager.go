@@ -72,5 +72,4 @@ func (m * Manager) BroadcastICE(sessionID string,candidate webrtc.ICECandidateIn
 		return fmt.Errorf("session doesnt exist")
 	}
 	return session.AddICECandidate(candidate)
-
 }

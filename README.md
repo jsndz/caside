@@ -305,3 +305,77 @@ caside/
 7.  |<----- Exchange ICE -------| |
 8.  | |----- Exchange ICE --------->|
     |<--- Media Flow Starts --->|<--- Media Flow Starts ------>|
+
+What You Should Do Next
+
+1.  Integrate Signaling with Media
+
+    When a client sends an SDP offer:
+
+        Use media.Manager to create or join a session.
+
+        Pass the SDP offer to the Session.HandleSDP method.
+
+        Send the SDP answer back via signaling (Client.Send).
+
+    When receiving ICE candidates:
+
+        Forward these candidates to the relevant Session via Session.AddICECandidate.
+
+    Handle client disconnections by cleaning up sessions and removing clients from rooms.
+
+2.  Implement WebSocket Server Entrypoint
+
+    In cmd/signaling/main.go:
+
+        Set up HTTP server.
+
+        Upgrade HTTP connections to WebSocket.
+
+        Create Client instances for each WS connection.
+
+        Attach clients to the Hub.
+
+        Start client ReadPump and WritePump.
+
+        Initialize media.Manager and signaling.Hub.
+
+3.  Establish Room <-> Session Mapping
+
+    Right now rooms contain clients, and media sessions exist separately.
+
+    Connect a signaling room to a media session by:
+
+        Storing session ID in the room.
+
+        On "join" or "offer", check if a media session exists or create one.
+
+        Relay media signaling between clients via the session.
+
+4.  Track Management & Media Forwarding
+
+    Implement handling of incoming media tracks on PeerConnection.OnTrack event.
+
+    Use your Track abstraction to manage RTP packets.
+
+    Forward media streams as needed to other participants.
+
+5.  Client Side / Frontend
+
+    Build HTML + JavaScript that:
+
+        Connects via WebSocket to signaling server.
+
+        Exchanges SDP offers/answers and ICE candidates.
+
+        Captures local media and streams via WebRTC.
+
+        Displays remote media streams.
+
+6.  Error Handling and Cleanup
+
+    Gracefully handle errors on signaling and media layers.
+
+    Close sessions and tracks properly on client disconnect or room empty.
+
+    Manage resource cleanup.
