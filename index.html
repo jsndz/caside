@@ -9,6 +9,34 @@
         margin: 5px;
         background: #000;
       }
+      #joinModal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+      #joinModalContent {
+        background-color: #fff;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 30%;
+        text-align: center;
+        border-radius: 8px;
+      }
+      #closeBtn {
+        margin-top: 10px;
+        padding: 5px 10px;
+        border: none;
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -16,9 +44,17 @@
     <video id="localVideo" autoplay muted playsinline></video>
     <video id="remoteVideo" autoplay playsinline></video>
 
+    <!-- Modal -->
+    <div id="joinModal">
+      <div id="joinModalContent">
+        <p>You have successfully joined the room!</p>
+        <button id="closeBtn">Close</button>
+      </div>
+    </div>
+
     <script>
       const signalingUrl =
-        "wss://6e7b-2409-40f2-3145-e7c1-ecea-3dc5-84b7-a5a4.ngrok-free.app/ws";
+        "wss://a9c3-2409-40f2-3145-e7c1-8410-9441-dcfe-d7e2.ngrok-free.app/ws";
 
       const roomId = "123X";
       const socket = new WebSocket(signalingUrl);
@@ -33,6 +69,15 @@
       const localVideo = document.getElementById("localVideo");
       const remoteVideo = document.getElementById("remoteVideo");
 
+      // Modal elements
+      const joinModal = document.getElementById("joinModal");
+      const closeBtn = document.getElementById("closeBtn");
+
+      // Close modal event
+      closeBtn.onclick = () => {
+        joinModal.style.display = "none";
+      };
+
       socket.onopen = async () => {
         console.log("✅ Connected to signaling server");
 
@@ -44,6 +89,9 @@
         };
         socket.send(JSON.stringify(joinMessage));
         console.log("➡️ Sent join message");
+
+        // Show join modal
+        joinModal.style.display = "block";
 
         try {
           // Step 2: Start WebRTC

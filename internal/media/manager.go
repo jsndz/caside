@@ -38,6 +38,41 @@ func (m * Manager) CreateSession(config webrtc.Configuration)(string,*Session,er
 
 }
 
+func (m * Manager) CreateSessionWithTrack(config webrtc.Configuration,videoTrack *Track)(string,*Session,error){
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+		log.Printf("Session created")
+	newSession ,err:= NewSession(config)
+	if err != nil {
+		return "", nil, err
+	}
+
+	newSession.PeerConnection.AddTrack(videoTrack.TrackLocal)
+	newSession.PeerConnection.OnTrack(func(tr *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
+		go func ()  {
+			buf:= make([]byte,1500)
+			for{
+				n,_,err :=tr.Read(buf)
+				if err != nil {
+                    log.Println("Remote track read error:", err)
+                    return
+                }
+				err= videoTrack.WriteToTrack(buf[:n])
+				if err != nil {
+                    log.Println("Failed to write RTP:", err)
+                    return
+                }
+			}
+		}()
+	})
+	newSession.LocalTracks = append(newSession.LocalTracks, videoTrack.TrackLocal)
+	sessionId := uuid.New().String()
+	m.Sessions[sessionId]= newSession
+	return sessionId,newSession,nil
+
+}
+
+
 
 func (m * Manager) JoinSession(sessionID string)(*Session,error){
 	m.Mutex.RLock()

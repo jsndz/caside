@@ -77,7 +77,13 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 			session, err := m.JoinSession(message.RoomID)
 			if err != nil {
 				var createErr error
-				_, session, createErr = m.CreateSession(webrtc.Configuration{
+				videoCodec := webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}
+				videoTrack ,err := media.NewTrack("video",webrtc.RTPCodecTypeVideo,videoCodec)
+				if err!=nil{
+					log.Println("Failed to create video track:", err)
+					return
+				}
+				_, session, createErr = m.CreateSessionWithTrack(webrtc.Configuration{
 					ICEServers: []webrtc.ICEServer{
 						{URLs: []string{"stun:stun.l.google.com:19302"}},
 						{URLs: []string{"stun:stun1.l.google.com:19302"}},
@@ -85,7 +91,7 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 						{URLs: []string{"stun:stun3.l.google.com:19302"}},
 						{URLs: []string{"stun:stun4.l.google.com:19302"}},
 					},
-				})
+				},videoTrack)
 				if createErr != nil {
 					log.Println("Error creating session:", createErr)
 					return
@@ -128,9 +134,13 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 
 	case "candidate":
 		
+		if len(message.Payload) == 0 {
+			log.Println("Empty ICE candidate payload received, skipping")
+			return
+		}
 		var candidate webrtc.ICECandidateInit
-		log.Printf("Log payload %v",message.Payload)
-		if err:= json.Unmarshal(message.Payload,&candidate);err!=nil{
+		log.Printf("Log payload %s", string(message.Payload))
+		if err := json.Unmarshal(message.Payload, &candidate); err != nil {
 			log.Println("Failed to Unmarshal :", err)
 			return
 		}
