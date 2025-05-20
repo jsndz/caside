@@ -54,7 +54,7 @@
 
     <script>
       const signalingUrl =
-        "wss://a9c3-2409-40f2-3145-e7c1-8410-9441-dcfe-d7e2.ngrok-free.app/ws";
+        "wss://0557-2409-40f2-3018-412f-c6e3-dd0e-c876-4007.ngrok-free.app/ws";
 
       const roomId = "123X";
       const socket = new WebSocket(signalingUrl);
@@ -76,6 +76,10 @@
       // Close modal event
       closeBtn.onclick = () => {
         joinModal.style.display = "none";
+      };
+      socket.onclose = (event) => {
+        console.warn("⚠️ WebSocket connection closed:", event);
+        alert("The connection to the signaling server was closed.");
       };
 
       socket.onopen = async () => {
@@ -171,7 +175,7 @@
               JSON.stringify({
                 type: "candidate",
                 roomId: roomId,
-                candidate: event.candidate,
+                payload: event.candidate,
               })
             );
           }

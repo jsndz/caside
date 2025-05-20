@@ -1,6 +1,7 @@
 package media
 
 import (
+	"log"
 	"sync"
 
 	"github.com/pion/webrtc/v3"
@@ -17,6 +18,16 @@ type Session struct{
 
 func  NewSession(config webrtc.Configuration) (*Session,error){
 	peerConc, err := webrtc.NewPeerConnection(config)
+	peerConc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
+		log.Println("ICE Connection State has changed to:", state.String())
+	})
+	
+	peerConc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		log.Println("Peer Connection State has changed to:", state.String())
+	})
+	
+	
+	
 	if err!=nil{
 		return nil, err
 	}

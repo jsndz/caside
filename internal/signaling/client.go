@@ -74,7 +74,9 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 	}
 	case "offer":
 		if c.Room.Session==nil {
-			session, err := m.JoinSession(message.RoomID)
+			session, err := m.JoinSession(message.RoomID) 
+
+			
 			if err != nil {
 				var createErr error
 				videoCodec := webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}
@@ -86,10 +88,11 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 				_, session, createErr = m.CreateSessionWithTrack(webrtc.Configuration{
 					ICEServers: []webrtc.ICEServer{
 						{URLs: []string{"stun:stun.l.google.com:19302"}},
-						{URLs: []string{"stun:stun1.l.google.com:19302"}},
-						{URLs: []string{"stun:stun2.l.google.com:19302"}},
-						{URLs: []string{"stun:stun3.l.google.com:19302"}},
-						{URLs: []string{"stun:stun4.l.google.com:19302"}},
+						{
+							URLs:       []string{"turn:relay.metered.ca:443"},
+							Username:   "openai",
+							Credential: "openai",
+						},
 					},
 				},videoTrack)
 				if createErr != nil {
@@ -157,6 +160,7 @@ func HandleEvents( message Message, c *Client, h *Hub,m *media.Manager) {
 			log.Println("Error adding ICE candidate:", err)			
 		}
 		c.Room.Broadcast(c.ID,message.Payload)
+
 	default:
 		log.Println("Unknown message type:", message.Type)
 	}

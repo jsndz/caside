@@ -2,6 +2,7 @@ package media
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/pion/webrtc/v3"
@@ -61,3 +62,25 @@ func (t *Track) Close()(error){
 }
 
 
+func RelayTrack(remoteTrack *webrtc.TrackRemote, localTrack *Track) {
+	go func() {
+		buf := make([]byte, 1500)
+		for {
+			n, _, err := remoteTrack.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					fmt.Println("Remote track closed")
+				} else {
+					fmt.Println("Error reading from remote track:", err)
+				}
+				localTrack.Close()
+				break
+			}
+
+			if writeErr := localTrack.WriteToTrack(buf[:n]); writeErr != nil {
+				fmt.Println("Error writing to local track:", writeErr)
+				break
+			}
+		}
+	}()
+}

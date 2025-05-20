@@ -49,24 +49,29 @@ func (m * Manager) CreateSessionWithTrack(config webrtc.Configuration,videoTrack
 
 	newSession.PeerConnection.AddTrack(videoTrack.TrackLocal)
 	newSession.PeerConnection.OnTrack(func(tr *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
-		go func ()  {
-			buf:= make([]byte,1500)
-			for{
-				n,_,err :=tr.Read(buf)
-				if err != nil {
-                    log.Println("Remote track read error:", err)
-                    return
-                }
-				err= videoTrack.WriteToTrack(buf[:n])
-				if err != nil {
-                    log.Println("Failed to write RTP:", err)
-                    return
-                }
-			}
-		}()
+		log.Printf("OnTrack triggered: SSRC=%d, ID=%s, PayloadType=%d", tr.SSRC(), tr.ID(), tr.PayloadType())
+		localTrack, err := NewTrack(tr.ID(), tr.Kind(), tr.Codec().RTPCodecCapability)
+		if err != nil {
+			log.Println("Failed to create local track:", err)
+			return
+		}
+	
+		// Step 2: Add local track to the PeerConnection
+		_, err = newSession.PeerConnection.AddTrack(localTrack.TrackLocal)
+		if err != nil {
+			log.Println("Failed to add local track to PeerConnection:", err)
+			return
+		}
+	
+		// Step 3: Start relaying media from remote to local track
+		go RelayTrack(tr, localTrack)
+	
+		// Step 4: Optionally store the local track for later
+		newSession.LocalTracks = append(newSession.LocalTracks, localTrack.TrackLocal)
 	})
+	
 	newSession.LocalTracks = append(newSession.LocalTracks, videoTrack.TrackLocal)
-	sessionId := uuid.New().String()
+	sessionId := "123X"
 	m.Sessions[sessionId]= newSession
 	return sessionId,newSession,nil
 
@@ -77,8 +82,9 @@ func (m * Manager) CreateSessionWithTrack(config webrtc.Configuration,videoTrack
 func (m * Manager) JoinSession(sessionID string)(*Session,error){
 	m.Mutex.RLock()
 	defer m.Mutex.RUnlock()
-	
-	session,exist := m.Sessions[sessionID]
+	log.Printf("Joining session")
+
+	session,exist := m.Sessions["123X"]
 	if !exist{
 		return nil,fmt.Errorf("to join session doesnt exist %v",sessionID)
 	}
